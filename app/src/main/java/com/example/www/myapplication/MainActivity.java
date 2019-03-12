@@ -32,6 +32,8 @@ public class MainActivity extends AppCompatActivity {
     ScanCallback cb;
     String bus_name="OnBoard_";
     int route_no=1;
+    String message="";
+    int i=49;
     ArrayAdapter<String> adapter;
     ArrayList<String> devices=new ArrayList<>();
 
@@ -53,24 +55,43 @@ public class MainActivity extends AppCompatActivity {
         cb =new ScanCallback() {
             @Override
             public void onScanResult(int callbackType, ScanResult result) {
-                Log.d("TAG", "onScanResult: "+"callback");
-                //if(!devices.contains(result.getDevice().getName())) {
-                    List<ADStructure> structures =
-                            ADPayloadParser.getInstance().parse(result.getScanRecord().getBytes());
-
-                    for (ADStructure structure : structures) {
-                        EddystoneURL es=null;
-                        if(structure.getClass().equals(EddystoneURL.class)){
-                            es = (EddystoneURL)structure;
-                            URL url = es.getURL();
-                            String s=url.toString();
-                            Log.d("TAG", "onScanResult: "+result.getDevice().getName()+" "+s);
+                Log.d("TAG", ""+result.getDevice().getName());
+                //if(result.getDevice().getName()!=null) {
+                    //if (result.getDevice().getName().equals(bus_name + route_no)) {
+                        List<ADStructure> structures =
+                                ADPayloadParser.getInstance().parse(result.getScanRecord().getBytes());
+                        for (ADStructure structure : structures) {
+                            EddystoneURL es = null;
+                            if (structure.getClass().equals(EddystoneURL.class)) {
+                                es = (EddystoneURL) structure;
+                                URL url = es.getURL();
+                                String s = url.toString();
+                              if((int)s.charAt(8)==i) {
+                                  message=message+s;
+                                  Log.d("TAG", "message: "+message + i);
+                                  i++;
+                                  if(i==52){
+                                      Log.d("TAG", "message: " + message);
+                                      String str="";
+                                      for (int j=9;j<message.length();){
+                                          if(!(message.charAt(j)=='.')){
+                                              str=str+message.charAt(j);
+                                              j++;
+                                          }
+                                          if(message.charAt(j)=='.'){
+                                              j=j+12;
+                                          }
+                                      }
+                                      bluetoothLeScanner.stopScan(cb);
+                                  }
+                              }
+                            }
                         }
-                        devices.add(result.getDevice().getName());
-                        adapter.notifyDataSetChanged();
-                    }
 
-                //}
+//                    }
+//                }
+                devices.add(result.getDevice().getName());
+                adapter.notifyDataSetChanged();
 
             }
 
@@ -88,6 +109,8 @@ public class MainActivity extends AppCompatActivity {
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                devices.clear();
+                adapter.notifyDataSetChanged();
                 bus_name=bus_name+route_no;
                 checkBTPermissions();
                 bluetoothLeScanner.startScan(cb);
